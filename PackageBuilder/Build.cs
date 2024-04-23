@@ -110,7 +110,7 @@ namespace VRC.PackageManagement.Automation
                 
                 if (!FileSystemTasks.FileExists(PackageListingSourcePath))
                 {
-                    AbsolutePath packagePath = RootDirectory.Parent / "Packages"  / CurrentPackageName  / PackageManifestFilename;
+                    AbsolutePath packagePath = RootDirectory.Parent / PackageManifestFilename;
                     if (!FileSystemTasks.FileExists(packagePath))
                     {
                         Serilog.Log.Error($"Could not find Listing Source at {PackageListingSourcePath} or Package Manifest at {packagePath}, you need at least one of them.");
@@ -234,8 +234,16 @@ namespace VRC.PackageManagement.Automation
                 
                 Serilog.Log.Information($"Made listingInfo {JsonConvert.SerializeObject(listingInfo, JsonWriteOptions)}");
 
-                var latestPackages = packages.OrderByDescending(p => p.Version).DistinctBy(p => p.Id).ToList();
+                // OrderByDescendingの結果をログに出力
+                Serilog.Log.Debug("Ordered Packages by Version Descending:");
+                foreach (var package in packages.OrderByDescending(p => new Version(p.Version)).ToList())
+                {
+                    Serilog.Log.Debug($"Id: {package.Id}, Version: {package.Version}");
+                }
+
+                var latestPackages = packages.OrderByDescending(p => new Version(p.Version)).DistinctBy(p => p.Id).ToList();
                 Serilog.Log.Information($"LatestPackages: {JsonConvert.SerializeObject(latestPackages, JsonWriteOptions)}");
+
                 var formattedPackages = latestPackages.ConvertAll(p => new {
                     Name = p.Id,
                     Author = new {
